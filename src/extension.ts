@@ -13,7 +13,6 @@ import Settings from '@settings/settings';
 import SignalHandling from './utils/signalHandling';
 import GlobalState from './utils/globalState';
 import Indicator from './indicator/indicator';
-import { Extension } from 'resource:///org/gnome/shell/extensions/extension.js';
 import { ExtensionMetadata } from 'resource:///org/gnome/shell/extensions/extension.js';
 import DBus from './dbus';
 import KeyBindings, {
@@ -27,6 +26,7 @@ import Tile from '@components/layout/Tile';
 import { WindowBorderManager } from '@components/windowBorderManager';
 import TilingShellWindowManager from '@components/windowManager/tilingShellWindowManager';
 import ExtendedWindow from '@components/tilingsystem/extendedWindow';
+import { Extension } from '@polyfill';
 
 const debug = logger('extension');
 
