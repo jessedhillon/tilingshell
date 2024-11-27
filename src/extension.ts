@@ -2,7 +2,11 @@ import './styles/stylesheet.scss';
 
 import { Gio, GLib, Meta } from '@gi.ext';
 import { logger } from '@utils/logger';
-import { filterUnfocusableWindows, getMonitors, squaredEuclideanDistance } from '@/utils/ui';
+import {
+    filterUnfocusableWindows,
+    getMonitors,
+    squaredEuclideanDistance,
+} from '@/utils/ui';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import { TilingManager } from '@/components/tilingsystem/tilingManager';
 import Settings from '@settings/settings';
@@ -12,7 +16,10 @@ import Indicator from './indicator/indicator';
 import { Extension } from 'resource:///org/gnome/shell/extensions/extension.js';
 import { ExtensionMetadata } from 'resource:///org/gnome/shell/extensions/extension.js';
 import DBus from './dbus';
-import KeyBindings, { KeyBindingsDirection, FocusSwitchDirection } from './keybindings';
+import KeyBindings, {
+    KeyBindingsDirection,
+    FocusSwitchDirection,
+} from './keybindings';
 import SettingsOverride from '@settings/settingsOverride';
 import { ResizingManager } from '@components/tilingsystem/resizeManager';
 import OverriddenWindowMenu from '@components/window_menu/overriddenWindowMenu';
@@ -239,9 +246,20 @@ export default class TilingShellExtension extends Extension {
                 (
                     kb: KeyBindings,
                     dp: Meta.Display,
-                    dir: KeyBindingsDirection | FocusSwitchDirection,
+                    dir: FocusSwitchDirection,
                 ) => {
                     this._onKeyboardFocusWin(dp, dir);
+                },
+            );
+            this._signals.connect(
+                this._keybindings,
+                'focus-window-direction',
+                (
+                    kb: KeyBindings,
+                    dp: Meta.Display,
+                    dir: KeyBindingsDirection,
+                ) => {
+                    this._onKeyboardFocusWinDirection(dp, dir);
                 },
             );
         }
@@ -469,12 +487,12 @@ export default class TilingShellExtension extends Extension {
         );
     }
 
-    private _onKeyboardFocusWin(
+    private _onKeyboardFocusWinDirection(
         display: Meta.Display,
         direction: KeyBindingsDirection | FocusSwitchDirection,
     ) {
         const focus_window = display.get_focus_window();
-        const focusParent = (focus_window.get_transient_for() || focus_window);
+        const focusParent = focus_window.get_transient_for() || focus_window;
 
         if (
             !focus_window ||
@@ -494,27 +512,9 @@ export default class TilingShellExtension extends Extension {
             y: focusWindowRect.y + focusWindowRect.height / 2,
         };
 
-        const windowList = filterUnfocusableWindows(focus_window.get_workspace().list_windows());
-        const focusedIdx = windowList.findIndex((win) => {
-            // in case we are iterating over a modal dialog for our focused window
-            return win === focusParent;
-        });
-
-        switch (direction) {
-            case FocusSwitchDirection.PREV:
-                if (focusedIdx == 0 && Settings.WRAPAROUND_FOCUS) {
-                    windowList[windowList.length - 1].activate(global.get_current_time());
-                } else {
-                    windowList[focusedIdx - 1].activate(global.get_current_time());
-                }
-                return;
-            case FocusSwitchDirection.NEXT:
-                const nextIdx = (focusedIdx + 1) % windowList.length;
-                if (nextIdx > 0 || Settings.WRAPAROUND_FOCUS) {
-                    windowList[nextIdx].activate(global.get_current_time());
-                }
-                return;
-        }
+        const windowList = filterUnfocusableWindows(
+            focus_window.get_workspace().list_windows(),
+        );
 
         windowList
             .filter((win) => {
@@ -559,6 +559,51 @@ export default class TilingShellExtension extends Extension {
         if (!bestWindow) return;
 
         bestWindow.activate(global.get_current_time());
+    }
+
+    private _onKeyboardFocusWin(
+        display: Meta.Display,
+        direction: FocusSwitchDirection,
+    ) {
+        const focus_window = display.get_focus_window();
+        const focusParent = focus_window.get_transient_for() || focus_window;
+
+        if (
+            !focus_window ||
+            !focus_window.has_focus() ||
+            focusParent.windowType !== Meta.WindowType.NORMAL ||
+            (focus_window.get_wm_class() &&
+                focus_window.get_wm_class() === 'gjs')
+        )
+            return;
+
+        const windowList = filterUnfocusableWindows(
+            focus_window.get_workspace().list_windows(),
+        );
+        const focusedIdx = windowList.findIndex((win) => {
+            // in case we are iterating over a modal dialog for our focused window
+            return win === focusParent;
+        });
+
+        let nextIndex = -1;
+        switch (direction) {
+            case FocusSwitchDirection.PREV:
+                if (focusedIdx === 0 && Settings.WRAPAROUND_FOCUS) {
+                    windowList[windowList.length - 1].activate(
+                        global.get_current_time(),
+                    );
+                } else {
+                    windowList[focusedIdx - 1].activate(
+                        global.get_current_time(),
+                    );
+                }
+                break;
+            case FocusSwitchDirection.NEXT:
+                nextIndex = (focusedIdx + 1) % windowList.length;
+                if (nextIndex > 0 || Settings.WRAPAROUND_FOCUS)
+                    windowList[nextIndex].activate(global.get_current_time());
+                break;
+        }
     }
 
     private _onKeyboardUntileWindow(kb: KeyBindings, display: Meta.Display) {

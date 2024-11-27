@@ -68,7 +68,7 @@
             <description>Restore the windows to their original size when untiled.</description>
         </key>
         <key name="enable-wraparound-focus" type="b">
-            <default>false</default>
+            <default>true</default>
             <summary>Enable next/previous window focus to wrap around</summary>
             <description>When focusing next or previous window, wrap around at the window edge</description>
         </key>

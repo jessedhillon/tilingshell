@@ -16,16 +16,9 @@ export enum KeyBindingsDirection {
     RIGHT,
 }
 
-const numKeyBindingDirections =
-    Object.keys(KeyBindingsDirection).
-    filter(key => isNaN(Number(key))).
-    length;
-
-// FocusSwitchDirection values must be exclusive of KeyBindingsDirection
-// because either type could be an argument to Extension._onKeyboardFocusWin
 export enum FocusSwitchDirection {
-    NEXT = (numKeyBindingDirections + 1),
-    PREV = (numKeyBindingDirections + 2),
+    NEXT = 1,
+    PREV,
 }
 
 @registerGObjectClass
@@ -48,8 +41,11 @@ export default class KeyBindings extends GObject.Object {
             'move-window-center': {
                 param_types: [Meta.Display.$gtype], // Meta.Display
             },
+            'focus-window-direction': {
+                param_types: [Meta.Display.$gtype, GObject.TYPE_INT], // Meta.Display, KeyBindingsDirection
+            },
             'focus-window': {
-                param_types: [Meta.Display.$gtype, GObject.TYPE_INT], // Meta.Display, KeyBindingsDirection | FocusSwitchDirection
+                param_types: [Meta.Display.$gtype, GObject.TYPE_INT], // Meta.Display, FocusSwitchDirection
             },
         },
     };
@@ -156,7 +152,11 @@ export default class KeyBindings extends GObject.Object {
             Meta.KeyBindingFlags.NONE,
             Shell.ActionMode.NORMAL,
             (display: Meta.Display) => {
-                this.emit('focus-window', display, KeyBindingsDirection.RIGHT);
+                this.emit(
+                    'focus-window-direction',
+                    display,
+                    KeyBindingsDirection.RIGHT,
+                );
             },
         );
 
@@ -166,7 +166,11 @@ export default class KeyBindings extends GObject.Object {
             Meta.KeyBindingFlags.NONE,
             Shell.ActionMode.NORMAL,
             (display: Meta.Display) => {
-                this.emit('focus-window', display, KeyBindingsDirection.LEFT);
+                this.emit(
+                    'focus-window-direction',
+                    display,
+                    KeyBindingsDirection.LEFT,
+                );
             },
         );
 
@@ -176,7 +180,11 @@ export default class KeyBindings extends GObject.Object {
             Meta.KeyBindingFlags.NONE,
             Shell.ActionMode.NORMAL,
             (display: Meta.Display) => {
-                this.emit('focus-window', display, KeyBindingsDirection.UP);
+                this.emit(
+                    'focus-window-direction',
+                    display,
+                    KeyBindingsDirection.UP,
+                );
             },
         );
 
@@ -186,7 +194,11 @@ export default class KeyBindings extends GObject.Object {
             Meta.KeyBindingFlags.NONE,
             Shell.ActionMode.NORMAL,
             (display: Meta.Display) => {
-                this.emit('focus-window', display, KeyBindingsDirection.DOWN);
+                this.emit(
+                    'focus-window-direction',
+                    display,
+                    KeyBindingsDirection.DOWN,
+                );
             },
         );
 

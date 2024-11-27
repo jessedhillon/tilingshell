@@ -242,13 +242,6 @@ export default class TilingShellExtensionPreferences extends ExtensionPreference
         );
         behaviourGroup.add(restoreToOriginalSizeRow);
 
-        const wrapAroundRow = this._buildSwitchRow(
-            Settings.KEY_WRAPAROUND_FOCUS,
-            _('Enable next/previous window focus to wrap around'),
-            _('When focusing next or previous window, wrap around at the window edge'),
-        );
-        behaviourGroup.add(wrapAroundRow);
-
         const overrideWindowMenuRow = this._buildSwitchRow(
             Settings.KEY_OVERRIDE_WINDOW_MENU,
             _('Add snap assistant and auto-tile buttons to window menu'),
@@ -479,6 +472,15 @@ export default class TilingShellExtensionPreferences extends ExtensionPreference
             'active',
         );
         prefsPage.add(keybindingsGroup);
+
+        const wrapAroundRow = this._buildSwitchRow(
+            Settings.KEY_WRAPAROUND_FOCUS,
+            _('Enable next/previous window focus to wrap around'),
+            _(
+                'When focusing next or previous window, wrap around at the window edge',
+            ),
+        );
+        keybindingsGroup.add(wrapAroundRow);
 
         const gioSettings = this.getSettings();
         const keybindings: [

@@ -165,10 +165,14 @@ export function buildBlurEffect(sigma: number): Shell.BlurEffect {
 
 function getTransientOrParent(window: Meta.Window): Meta.Window {
     const transient = window.get_transient_for();
-    return window.is_attached_dialog() && transient !== null ? transient : window;
+    return window.is_attached_dialog() && transient !== null
+        ? transient
+        : window;
 }
 
-export function filterUnfocusableWindows(windows: Meta.Window[]): Meta.Window[] {
+export function filterUnfocusableWindows(
+    windows: Meta.Window[],
+): Meta.Window[] {
     // we want to filter out
     // - top-level windows which are precluded by dialogs
     // - anything tagged skip-taskbar
@@ -190,8 +194,8 @@ export function getWindows(workspace?: Meta.Workspace): Meta.Window[] {
     // than the parent; so start with the complete list ...
     // ... map windows to their parent where appropriate ...
     return filterUnfocusableWindows(
-        global.display
-            .get_tab_list(Meta.TabList.NORMAL_ALL, workspace));
+        global.display.get_tab_list(Meta.TabList.NORMAL_ALL, workspace),
+    );
 }
 
 export function squaredEuclideanDistance(
