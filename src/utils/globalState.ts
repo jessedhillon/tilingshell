@@ -89,6 +89,12 @@ export default class GlobalState extends GObject.Object {
                     return;
                 }
 
+                const activeIndex =
+                    global.workspaceManager.get_active_workspace_index();
+                const defaultLayout: Layout =
+                    activeIndex < this._layouts.length
+                        ? this._layouts[activeIndex]
+                        : this._layouts[0];
                 const n_monitors = Main.layoutManager.monitors.length;
                 const n_workspaces = global.workspaceManager.get_n_workspaces();
                 for (let i = 0; i < n_workspaces; i++) {
@@ -99,9 +105,9 @@ export default class GlobalState extends GObject.Object {
                     const monitors_layouts =
                         i < selected_layouts.length
                             ? selected_layouts[i]
-                            : [GlobalState.get().layouts[0].id];
+                            : [defaultLayout.id];
                     while (monitors_layouts.length < n_monitors)
-                        monitors_layouts.push(this._layouts[0].id);
+                        monitors_layouts.push(defaultLayout.id);
                     while (monitors_layouts.length > n_monitors)
                         monitors_layouts.pop();
 
@@ -118,7 +124,12 @@ export default class GlobalState extends GObject.Object {
                     global.workspaceManager.get_workspace_by_index(index);
                 if (!newWs) return;
 
-                const layout: Layout = this._layouts[0];
+                const activeIndex =
+                    global.workspaceManager.get_active_workspace_index();
+                const layout: Layout =
+                    activeIndex < this._layouts.length
+                        ? this._layouts[activeIndex]
+                        : this._layouts[0];
                 debug(`added workspace ${index}`);
                 this._selected_layouts.set(
                     newWs,

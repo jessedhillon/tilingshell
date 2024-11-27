@@ -16,7 +16,8 @@ Gio._promisify(Shell.Screenshot, 'composite_to_stream');
 
 const WINDOW_BORDER_WIDTH = 1;
 const DEFAULT_BORDER_RADIUS = 11;
-const SMART_BORDER_RADIUS_DELAY = 240;
+const SMART_BORDER_RADIUS_DELAY = 460;
+const SMART_BORDER_RADIUS_FIRST_FRAME_DELAY = 240;
 
 const debug = logger('WindowBorderManager');
 
@@ -160,7 +161,7 @@ class WindowBorder extends St.Bin {
                     );
                     if (this._timeout) clearTimeout(this._timeout);
                     this._timeout = undefined;
-                }, SMART_BORDER_RADIUS_DELAY);
+                }, SMART_BORDER_RADIUS_DELAY * 2);
             }
 
             const rect = this._window.get_frame_rect();
@@ -231,7 +232,7 @@ class WindowBorder extends St.Bin {
                     );
                     if (this._timeout) clearTimeout(this._timeout);
                     this._timeout = undefined;
-                }, SMART_BORDER_RADIUS_DELAY);
+                }, SMART_BORDER_RADIUS_FIRST_FRAME_DELAY);
 
                 winActor.disconnect(firstFrameId);
             });
