@@ -2,7 +2,7 @@ import './styles/stylesheet.scss';
 
 import { Gio, GLib, Meta } from '@gi.ext';
 import { logger } from '@utils/logger';
-import { getMonitors, getWindows, squaredEuclideanDistance } from '@/utils/ui';
+import { filterUnfocusableWindows, getMonitors, squaredEuclideanDistance } from '@/utils/ui';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import { TilingManager } from '@/components/tilingsystem/tilingManager';
 import Settings from '@settings/settings';
@@ -12,7 +12,7 @@ import Indicator from './indicator/indicator';
 import { Extension } from 'resource:///org/gnome/shell/extensions/extension.js';
 import { ExtensionMetadata } from 'resource:///org/gnome/shell/extensions/extension.js';
 import DBus from './dbus';
-import KeyBindings, { KeyBindingsDirection } from './keybindings';
+import KeyBindings, { KeyBindingsDirection, FocusSwitchDirection } from './keybindings';
 import SettingsOverride from '@settings/settingsOverride';
 import { ResizingManager } from '@components/tilingsystem/resizeManager';
 import OverriddenWindowMenu from '@components/window_menu/overriddenWindowMenu';
@@ -239,7 +239,7 @@ export default class TilingShellExtension extends Extension {
                 (
                     kb: KeyBindings,
                     dp: Meta.Display,
-                    dir: KeyBindingsDirection,
+                    dir: KeyBindingsDirection | FocusSwitchDirection,
                 ) => {
                     this._onKeyboardFocusWin(dp, dir);
                 },
@@ -471,14 +471,15 @@ export default class TilingShellExtension extends Extension {
 
     private _onKeyboardFocusWin(
         display: Meta.Display,
-        direction: KeyBindingsDirection,
+        direction: KeyBindingsDirection | FocusSwitchDirection,
     ) {
-        debug('focus window');
         const focus_window = display.get_focus_window();
+        const focusParent = (focus_window.get_transient_for() || focus_window);
+
         if (
             !focus_window ||
             !focus_window.has_focus() ||
-            focus_window.windowType !== Meta.WindowType.NORMAL ||
+            focusParent.windowType !== Meta.WindowType.NORMAL ||
             (focus_window.get_wm_class() &&
                 focus_window.get_wm_class() === 'gjs')
         )
@@ -492,7 +493,30 @@ export default class TilingShellExtension extends Extension {
             x: focusWindowRect.x + focusWindowRect.width / 2,
             y: focusWindowRect.y + focusWindowRect.height / 2,
         };
-        getWindows(focus_window.get_workspace())
+
+        const windowList = filterUnfocusableWindows(focus_window.get_workspace().list_windows());
+        const focusedIdx = windowList.findIndex((win) => {
+            // in case we are iterating over a modal dialog for our focused window
+            return win === focusParent;
+        });
+
+        switch (direction) {
+            case FocusSwitchDirection.PREV:
+                if (focusedIdx == 0 && Settings.WRAPAROUND_FOCUS) {
+                    windowList[windowList.length - 1].activate(global.get_current_time());
+                } else {
+                    windowList[focusedIdx - 1].activate(global.get_current_time());
+                }
+                return;
+            case FocusSwitchDirection.NEXT:
+                const nextIdx = (focusedIdx + 1) % windowList.length;
+                if (nextIdx > 0 || Settings.WRAPAROUND_FOCUS) {
+                    windowList[nextIdx].activate(global.get_current_time());
+                }
+                return;
+        }
+
+        windowList
             .filter((win) => {
                 if (win === focus_window || win.minimized) return false;
 
