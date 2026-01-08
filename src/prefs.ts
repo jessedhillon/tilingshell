@@ -809,6 +809,29 @@ export default class TilingShellExtensionPreferences extends ExtensionPreference
         );
         keybindingsGroup.add(directionalFocusTiledWindows);
 
+        const excludedWmClassesRow = new Adw.EntryRow({
+            title: _('Excluded windows'),
+            showApplyButton: true,
+        });
+        excludedWmClassesRow.set_tooltip_text(
+            _(
+                'Comma-separated list of WM classes or actor names to skip during next/previous focus navigation (e.g., quake-terminal)',
+            ),
+        );
+        // Load existing values
+        const existingClasses = Settings.FOCUS_WINDOW_EXCLUDED_WM_CLASSES;
+        excludedWmClassesRow.set_text(existingClasses.join(', '));
+        // Save when apply button is clicked
+        excludedWmClassesRow.connect('apply', () => {
+            const text = excludedWmClassesRow.get_text();
+            const classes = text
+                .split(',')
+                .map((s) => s.trim())
+                .filter((s) => s.length > 0);
+            Settings.FOCUS_WINDOW_EXCLUDED_WM_CLASSES = classes;
+        });
+        keybindingsGroup.add(excludedWmClassesRow);
+
         // Import/export/reset section
         const importExportGroup = new Adw.PreferencesGroup({
             title: _('Import, export and reset'),
