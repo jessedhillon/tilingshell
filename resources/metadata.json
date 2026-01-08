@@ -13,8 +13,8 @@
     "49",
     "50"
   ],
-  "version": 99,
-  "version-name": "18.0",
+  "version": 102,
+  "version-name": "18.0-jessedhillon",
   "url": "https://github.com/domferr/tilingshell",
   "settings-schema": "org.gnome.shell.extensions.tilingshell",
   "gettext-domain": "tilingshell",
