@@ -72,6 +72,11 @@
             <summary>Enable next/previous window focus to wrap around</summary>
             <description>When focusing next or previous window, wrap around at the window edge</description>
         </key>
+        <key name="focus-window-excluded-wm-classes" type="as">
+            <default>[]</default>
+            <summary>Window identifiers to exclude from focus navigation</summary>
+            <description>Windows matching these WM classes or actor names will be skipped during next/previous focus navigation</description>
+        </key>
         <key name="enable-directional-focus-tiled-only" type="b">
             <default>false</default>
             <summary>Restrict directional focus to tiled windows</summary>

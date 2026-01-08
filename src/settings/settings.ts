@@ -89,6 +89,7 @@ export default class Settings {
     static KEY_SPAN_MULTIPLE_TILES = 'enable-span-multiple-tiles';
     static KEY_RESTORE_WINDOW_ORIGINAL_SIZE = 'restore-window-original-size';
     static KEY_WRAPAROUND_FOCUS = 'enable-wraparound-focus';
+    static KEY_FOCUS_WINDOW_EXCLUDED_WM_CLASSES = 'focus-window-excluded-wm-classes';
     static KEY_ENABLE_DIRECTIONAL_FOCUS_TILED_ONLY = 'enable-directional-focus-tiled-only';
     static KEY_RESIZE_COMPLEMENTING_WINDOWS = 'resize-complementing-windows';
     static KEY_ENABLE_BLUR_SNAP_ASSISTANT = 'enable-blur-snap-assistant';
@@ -273,6 +274,21 @@ export default class Settings {
 
     static set WRAPAROUND_FOCUS(val: boolean) {
         set_boolean(Settings.KEY_WRAPAROUND_FOCUS, val);
+    }
+
+    static get FOCUS_WINDOW_EXCLUDED_WM_CLASSES(): string[] {
+        return (
+            Settings.gioSetting.get_strv(
+                Settings.KEY_FOCUS_WINDOW_EXCLUDED_WM_CLASSES,
+            ) ?? []
+        );
+    }
+
+    static set FOCUS_WINDOW_EXCLUDED_WM_CLASSES(val: string[]) {
+        Settings.gioSetting.set_strv(
+            Settings.KEY_FOCUS_WINDOW_EXCLUDED_WM_CLASSES,
+            val,
+        );
     }
 
     static get ENABLE_DIRECTIONAL_FOCUS_TILED_ONLY(): boolean {

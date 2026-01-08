@@ -1,6 +1,7 @@
-import { St, Meta, Mtk, Clutter } from '../gi/ext';
+import { St, Meta, Mtk, Clutter, GObject } from '../gi/ext';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import { Monitor } from 'resource:///org/gnome/shell/ui/layout.js';
+import Settings from '../settings/settings';
 
 export const getMonitors = (): Monitor[] => Main.layoutManager.monitors;
 
@@ -299,16 +300,28 @@ export function getGlobalWindowList(
     epsilon: number = 50,
 ): Meta.Window[] {
     const monitors = sortMonitorsSpatially(getMonitors(), epsilon);
+    const excludedClasses = Settings.FOCUS_WINDOW_EXCLUDED_WM_CLASSES.map(
+        (c) => c.toLowerCase(),
+    );
     const allWindows: Meta.Window[] = [];
 
     for (const monitor of monitors) {
         // Get windows on this monitor for the given workspace
         const monitorWindows = filterUnfocusableWindows(
-            workspace.list_windows().filter(
-                (win) =>
-                    win.get_window_type() === Meta.WindowType.NORMAL &&
-                    win.get_monitor() === monitor.index,
-            ),
+            workspace.list_windows().filter((win) => {
+                if (win.get_window_type() !== Meta.WindowType.NORMAL)
+                    return false;
+                if (win.get_monitor() !== monitor.index) return false;
+                // Filter out excluded WM classes or actor names
+                const wmClass = win.get_wm_class()?.toLowerCase() ?? '';
+                if (excludedClasses.includes(wmClass)) return false;
+                // Also check actor name (used by extensions like Quake Terminal)
+                const actor = win.get_compositor_private() as Clutter.Actor;
+                const actorName = actor?.name?.toLowerCase() ?? '';
+                if (actorName && excludedClasses.includes(actorName))
+                    return false;
+                return true;
+            }),
         );
         // Sort windows on this monitor spatially
         const sortedWindows = sortWindowsSpatially(monitorWindows, epsilon);
