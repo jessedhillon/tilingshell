@@ -3,9 +3,15 @@ import { Clutter } from '../../gi/ext';
 
 const MASONRY_ROW_MIN_HEIGHT_PERCENTAGE = 0.15;
 
+function isUsableSize(value: number): boolean {
+    return Number.isFinite(value) && value > 0;
+}
+
 export default class MasonryLayoutManager extends Clutter.LayoutManager {
-    static { registerGObjectClass(this) }
-    
+    static {
+        registerGObjectClass(this);
+    }
+
     private _rowCount: number;
     private _spacing: number;
     private _maxRowHeight: number;
@@ -23,8 +29,16 @@ export default class MasonryLayoutManager extends Clutter.LayoutManager {
         children: Clutter.Actor[],
         availableWidth: number,
         availableHeight: number,
-        rowHeight: number,
+        rowHeight: number
     ): { actor: Clutter.Actor; width: number; height: number }[][] {
+        if (
+            children.length === 0 ||
+            !isUsableSize(availableWidth) ||
+            !isUsableSize(availableHeight) ||
+            !isUsableSize(rowHeight)
+        )
+            return [];
+
         // lets compute the best number of rows and the best height of each row
         // making sure that we don't grow to much and go beyond the available height
         let rowCount = Math.max(1, Math.ceil(Math.sqrt(children.length)) - 1);
@@ -43,9 +57,12 @@ export default class MasonryLayoutManager extends Clutter.LayoutManager {
         for (const child of children) {
             const [_minWidth, natWidth] = child.get_preferred_width(-1);
             const [_minHeight, natHeight] = child.get_preferred_height(-1);
+            if (!isUsableSize(natWidth) || !isUsableSize(natHeight)) continue;
+
             // Maintain the aspect ratio
             const aspectRatio = natWidth / natHeight;
             const width = rowHeight * aspectRatio;
+            if (!isUsableSize(width)) continue;
 
             // Find the shortest row
             // This might not look efficient, but the number of rows is
@@ -63,8 +80,10 @@ export default class MasonryLayoutManager extends Clutter.LayoutManager {
             // if the element has a width higher than the container
             // clamp its width and change its height preserving
             // aspect ratio
-            const childWidth = Math.clamp(width, width, availableWidth);
+            const childWidth = Math.min(width, availableWidth);
             const childHeight = childWidth / aspectRatio;
+            if (!isUsableSize(childWidth) || !isUsableSize(childHeight))
+                continue;
 
             placements.push({
                 child,
@@ -138,21 +157,17 @@ export default class MasonryLayoutManager extends Clutter.LayoutManager {
     vfunc_allocate(container: Clutter.Actor, box: Clutter.ActorBox) {
         const children = container.get_children();
         if (children.length === 0) return;
-        console.log(
-            box.get_width(),
-            container.width,
-            box.get_height(),
-            container.height,
-        );
 
         const availableWidth = container.width - 2 * this._spacing;
         const availableHeight = container.height - 2 * this._spacing;
+        if (!isUsableSize(availableWidth) || !isUsableSize(availableHeight))
+            return;
 
         const allocationCache = container._allocationCache || new Map();
         container._allocationCache = allocationCache;
 
-        if (!children.find((ch) => !allocationCache.has(ch))) {
-            children.forEach((ch) => ch.allocate(allocationCache.get(ch)));
+        if (!children.find(ch => !allocationCache.has(ch))) {
+            children.forEach(ch => ch.allocate(allocationCache.get(ch)));
             return;
         }
         allocationCache.clear();
@@ -180,10 +195,13 @@ export default class MasonryLayoutManager extends Clutter.LayoutManager {
             const [_minHeight, naturalHeight] = child.get_preferred_height(-1);
             const [_minWidth, naturalWidth] =
                 child.get_preferred_width(naturalHeight);
+            if (!isUsableSize(naturalWidth) || !isUsableSize(naturalHeight))
+                continue;
 
             // Maintain the aspect ratio
             const aspectRatio = naturalWidth / naturalHeight;
             const width = rowHeight * aspectRatio;
+            if (!isUsableSize(width)) continue;
 
             // Find the shortest row
             // This might not look efficient, but the number of rows is
@@ -201,8 +219,10 @@ export default class MasonryLayoutManager extends Clutter.LayoutManager {
             // if the element has a width higher than the container
             // clamp its width and change its height preserving
             // aspect ratio
-            const childWidth = Math.clamp(width, width, availableWidth);
+            const childWidth = Math.min(width, availableWidth);
             const childHeight = childWidth / aspectRatio;
+            if (!isUsableSize(childWidth) || !isUsableSize(childHeight))
+                continue;
 
             placements.push({
                 child,
@@ -254,7 +274,7 @@ export default class MasonryLayoutManager extends Clutter.LayoutManager {
             const index = row[1];
             rowsOrdering.set(
                 index,
-                (newIndex + Math.floor(this._rowCount / 2)) % this._rowCount,
+                (newIndex + Math.floor(this._rowCount / 2)) % this._rowCount
             );
         });
         for (const placement of placements)
@@ -307,10 +327,10 @@ export default class MasonryLayoutManager extends Clutter.LayoutManager {
 
     vfunc_get_preferred_width(
         container: Clutter.Actor,
-        _forHeight: number,
+        _forHeight: number
     ): [number, number] {
         let maxX = 0;
-        container.get_children().forEach((ch) => {
+        container.get_children().forEach(ch => {
             maxX = Math.max(maxX, ch.x + ch.width);
         });
         // add this._spacing because we want some right padding
@@ -319,10 +339,10 @@ export default class MasonryLayoutManager extends Clutter.LayoutManager {
 
     vfunc_get_preferred_height(
         container: Clutter.Actor,
-        _forWidth: number,
+        _forWidth: number
     ): [number, number] {
         let maxY = 0;
-        container.get_children().forEach((ch) => {
+        container.get_children().forEach(ch => {
             maxY = Math.max(maxY, ch.y + ch.height);
         });
         // add this._spacing because we want some bottom padding

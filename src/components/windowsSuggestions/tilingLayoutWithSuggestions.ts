@@ -18,7 +18,9 @@ const ANIMATION_SPEED = 200;
 const MASONRY_LAYOUT_ROW_HEIGHT = 0.31;
 
 export default class TilingLayoutWithSuggestions extends LayoutWidget<SuggestionsTilePreview> {
-    static { registerGObjectClass(this) }
+    static {
+        registerGObjectClass(this);
+    }
 
     private _signals: SignalHandling;
     private _lastTiledWindow: Meta.Window | null;
@@ -30,7 +32,7 @@ export default class TilingLayoutWithSuggestions extends LayoutWidget<Suggestion
         innerGaps: Clutter.Margin,
         outerGaps: Clutter.Margin,
         containerRect: Mtk.Rectangle,
-        scalingFactor?: number,
+        scalingFactor?: number
     ) {
         super({
             containerRect,
@@ -54,7 +56,7 @@ export default class TilingLayoutWithSuggestions extends LayoutWidget<Suggestion
         parent: Clutter.Actor,
         rect: Mtk.Rectangle,
         gaps: Clutter.Margin,
-        tile: Tile,
+        tile: Tile
     ): SuggestionsTilePreview {
         return new SuggestionsTilePreview({
             parent,
@@ -69,7 +71,7 @@ export default class TilingLayoutWithSuggestions extends LayoutWidget<Suggestion
         nontiledWindows: Meta.Window[],
         window: Meta.Window,
         windowDesiredRect: Mtk.Rectangle,
-        monitorIndex: number,
+        monitorIndex: number
     ) {
         if (this._showing) return;
         this._showing = true;
@@ -109,26 +111,26 @@ export default class TilingLayoutWithSuggestions extends LayoutWidget<Suggestion
                 if (symbol === Clutter.KEY_Escape) this.close();
 
                 return Clutter.EVENT_PROPAGATE;
-            },
+            }
         );
     }
 
     private _showVacantPreviewsOnly(
         tiledWindows: ExtendedWindow[],
         windowDesiredRect: Mtk.Rectangle,
-        window: Meta.Window,
+        window: Meta.Window
     ) {
-        const vacantPreviews = this._previews.map((prev) => {
+        const vacantPreviews = this._previews.map(prev => {
             const previewRect = buildRectangle({
                 x: prev.innerX,
                 y: prev.innerY,
                 width: prev.innerWidth,
                 height: prev.innerHeight,
             });
-            return !tiledWindows.find((win) =>
+            return !tiledWindows.find(win =>
                 previewRect.overlap(
-                    win === window ? windowDesiredRect : win.get_frame_rect(),
-                ),
+                    win === window ? windowDesiredRect : win.get_frame_rect()
+                )
             );
         });
         const newPreviews = [];
@@ -146,7 +148,7 @@ export default class TilingLayoutWithSuggestions extends LayoutWidget<Suggestion
 
     private _recursivelyShowPopup(
         nontiledWindows: Meta.Window[],
-        monitorIndex: number,
+        monitorIndex: number
     ): void {
         if (this._previews.length === 0 || nontiledWindows.length === 0) {
             this.close();
@@ -155,11 +157,11 @@ export default class TilingLayoutWithSuggestions extends LayoutWidget<Suggestion
 
         // find the leftmost preview
         let preview = this._previews[0];
-        this._previews.forEach((prev) => {
+        this._previews.forEach(prev => {
             if (prev.x < preview.x) preview = prev;
         });
 
-        const clones = nontiledWindows.map((nonTiledWin) => {
+        const clones = nontiledWindows.map(nonTiledWin => {
             const winClone = new SuggestedWindowPreview(nonTiledWin);
             const winActor =
                 nonTiledWin.get_compositor_private() as Meta.WindowActor;
@@ -234,17 +236,22 @@ export default class TilingLayoutWithSuggestions extends LayoutWidget<Suggestion
                     return Clutter.EVENT_STOP;
                 },
             );
-
             return winClone;
         });
 
-        preview.addWindows(
-            clones,
-            this._containerRect.height * MASONRY_LAYOUT_ROW_HEIGHT,
-        );
+        if (
+            !preview.addWindows(
+                clones,
+                this._containerRect.height * MASONRY_LAYOUT_ROW_HEIGHT
+            )
+        ) {
+            clones.forEach(winClone => winClone.destroy());
+            this.close();
+            return;
+        }
 
         // show every clone with a fade in and scaling animation
-        clones.forEach((winClone) => {
+        clones.forEach(winClone => {
             // fade in and upscale by 3% the window preview (i.e. the clone)
             winClone.set_opacity(0);
             winClone.set_pivot_point(0.5, 0.5);
@@ -282,7 +289,7 @@ export default class TilingLayoutWithSuggestions extends LayoutWidget<Suggestion
 
         this._previews.push(...this._oldPreviews);
         this._oldPreviews = [];
-        this._previews.forEach((prev) => prev.removeAllWindows());
+        this._previews.forEach(prev => prev.removeAllWindows());
 
         this.ease({
             opacity: 0,
@@ -290,7 +297,7 @@ export default class TilingLayoutWithSuggestions extends LayoutWidget<Suggestion
             mode: Clutter.AnimationMode.EASE_OUT_QUAD,
             onStopped: () => {
                 this.hide();
-                this._previews.forEach((prev) => prev.open());
+                this._previews.forEach(prev => prev.open());
             },
         });
     }

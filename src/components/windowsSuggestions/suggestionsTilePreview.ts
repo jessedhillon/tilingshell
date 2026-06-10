@@ -10,18 +10,20 @@ const MASONRY_LAYOUT_SPACING = 32;
 const SCROLLBARS_SHOW_ANIM_DURATION = 100; // ms
 
 export default class SuggestionsTilePreview extends TilePreview {
-    static { registerGObjectClass(this, {
-        GTypeName: 'PopupTilePreview',
-        Properties: {
-            blur: GObject.ParamSpec.boolean(
-                'blur',
-                'blur',
-                'Enable or disable the blur effect',
-                GObject.ParamFlags.READWRITE,
-                false,
-            ),
-        },
-    })};
+    static {
+        registerGObjectClass(this, {
+            GTypeName: 'PopupTilePreview',
+            Properties: {
+                blur: GObject.ParamSpec.boolean(
+                    'blur',
+                    'blur',
+                    'Enable or disable the blur effect',
+                    GObject.ParamFlags.READWRITE,
+                    false
+                ),
+            },
+        });
+    }
 
     private _blur: boolean;
     private _container: St.BoxLayout;
@@ -47,14 +49,14 @@ export default class SuggestionsTilePreview extends TilePreview {
 
         this._recolor();
         const styleChangedSignalID = St.ThemeContext.get_for_stage(
-            global.get_stage(),
+            global.get_stage()
         ).connect('changed', () => {
             this._recolor();
         });
         this.connect('destroy', () =>
             St.ThemeContext.get_for_stage(global.get_stage()).disconnect(
-                styleChangedSignalID,
-            ),
+                styleChangedSignalID
+            )
         );
 
         this.reactive = true;
@@ -117,7 +119,7 @@ export default class SuggestionsTilePreview extends TilePreview {
             this._gaps.top > 0,
             this._gaps.right > 0,
             this._gaps.bottom > 0,
-            this._gaps.left > 0,
+            this._gaps.left > 0
         );
     }
 
@@ -143,7 +145,7 @@ export default class SuggestionsTilePreview extends TilePreview {
         // since an alpha value lower than 160 is not so much visible, enforce a minimum value of 160
         const newAlpha = Math.max(
             Math.min(backgroundColor.alpha + 35, 255),
-            160,
+            160
         );
         // The final alpha value is divided by 255 since CSS needs a value from 0 to 1, but ClutterColor expresses alpha from 0 to 255
         this.set_style(`
@@ -163,11 +165,11 @@ export default class SuggestionsTilePreview extends TilePreview {
                 this._scrollView.get_hscroll_bar(),
                 // @ts-expect-error "get_vscroll_bar is valid for GNOME < 48"
                 this._scrollView.get_vscroll_bar(),
-            ].forEach((bar) =>
+            ].forEach(bar =>
                 bar?.ease({
                     opacity: 255,
                     duration: SCROLLBARS_SHOW_ANIM_DURATION,
-                }),
+                })
             );
         }
     }
@@ -184,11 +186,11 @@ export default class SuggestionsTilePreview extends TilePreview {
                 this._scrollView.get_hscroll_bar(),
                 // @ts-expect-error "get_vscroll_bar is valid for GNOME < 48"
                 this._scrollView.get_vscroll_bar(),
-            ].forEach((bar) =>
+            ].forEach(bar =>
                 bar?.ease({
                     opacity: 0,
                     duration: SCROLLBARS_SHOW_ANIM_DURATION,
-                }),
+                })
             );
         }
     }
@@ -203,20 +205,33 @@ export default class SuggestionsTilePreview extends TilePreview {
         return super.vfunc_leave_event(event);
     }
 
-    public addWindows(windows: Clutter.Actor[], maxRowHeight: number) {
+    public addWindows(windows: Clutter.Actor[], maxRowHeight: number): boolean {
+        const availableWidth = this.innerWidth - 2 * MASONRY_LAYOUT_SPACING;
+        const availableHeight = this.innerHeight;
+        if (
+            windows.length === 0 ||
+            !Number.isFinite(availableWidth) ||
+            availableWidth <= 0 ||
+            !Number.isFinite(availableHeight) ||
+            availableHeight <= 0 ||
+            !Number.isFinite(maxRowHeight) ||
+            maxRowHeight <= 0
+        )
+            return false;
+
         // little trick: we hide the container and add all the windows
         // then we queue_relayout and we can compute the sizes of the windows
         // to compute placements and scale them preserving aspect ratio
         this._container.hide();
         // empty out the container
         this._container.destroy_all_children();
-        windows.forEach((actor) => this._container.add_child(actor));
+        windows.forEach(actor => this._container.add_child(actor));
         this._container.queue_relayout();
         const placements = MasonryLayoutManager.computePlacements(
             windows,
-            this.innerWidth - 2 * MASONRY_LAYOUT_SPACING,
-            this.innerHeight,
-            maxRowHeight,
+            availableWidth,
+            availableHeight,
+            maxRowHeight
         );
         // we remove all the windows and show back the container
         this._container.remove_all_children();
@@ -224,16 +239,16 @@ export default class SuggestionsTilePreview extends TilePreview {
 
         // add top space
         this._container.add_child(
-            new St.Widget({ height: MASONRY_LAYOUT_SPACING }),
+            new St.Widget({ height: MASONRY_LAYOUT_SPACING })
         );
         // add each row
-        placements.forEach((row) => {
+        placements.forEach(row => {
             const rowBox = new St.BoxLayout({
                 x_align: Clutter.ActorAlign.CENTER,
                 style: `spacing: ${MASONRY_LAYOUT_SPACING}px;`,
             });
             this._container.add_child(rowBox);
-            row.forEach((pl) => {
+            row.forEach(pl => {
                 rowBox.add_child(pl.actor);
                 pl.actor.set_height(pl.height);
                 pl.actor.set_width(pl.width);
@@ -241,8 +256,10 @@ export default class SuggestionsTilePreview extends TilePreview {
         });
         // add bottom space
         this._container.add_child(
-            new St.Widget({ height: MASONRY_LAYOUT_SPACING }),
+            new St.Widget({ height: MASONRY_LAYOUT_SPACING })
         );
+
+        return true;
     }
 
     public removeAllWindows() {
